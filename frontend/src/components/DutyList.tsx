@@ -18,9 +18,19 @@ const DutyList: React.FC<DutyListProps> = ({ duties, onUpdate, onDelete }) => {
     setEditingName(duty.name);
   };
 
+  // const handleSave = (duty: Duty) => {
+  //   onUpdate({ ...duty, name: editingName });
+  //   setEditingId(null);
+  // };
   const handleSave = (duty: Duty) => {
-    onUpdate({ ...duty, name: editingName });
+    if (editingName.trim() === '') {
+      // If editingName is empty, delete the duty instead of updating
+      onDelete(duty.id);
+    } else {
+      onUpdate({ ...duty, name: editingName });
+    }
     setEditingId(null);
+    setEditingName('');
   };
 
   return (
