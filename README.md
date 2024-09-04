@@ -4,6 +4,8 @@
 
 ### Run the project
 ```
+git clone https://github.com/hunterhe7/todo-list.git
+
 cd backend
 docker-compose up --build
 
