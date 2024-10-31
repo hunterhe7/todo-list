@@ -18,10 +18,6 @@ const DutyList: React.FC<DutyListProps> = ({ duties, onUpdate, onDelete }) => {
     setEditingName(duty.name);
   };
 
-  // const handleSave = (duty: Duty) => {
-  //   onUpdate({ ...duty, name: editingName });
-  //   setEditingId(null);
-  // };
   const handleSave = (duty: Duty) => {
     if (editingName.trim() === '') {
       // If editingName is empty, delete the duty instead of updating
@@ -42,8 +38,8 @@ const DutyList: React.FC<DutyListProps> = ({ duties, onUpdate, onDelete }) => {
         <List.Item key={duty.id}>
           <Space>
             <Checkbox
-              checked={duty.isDone}
-              onChange={() => onUpdate({ ...duty, isDone: !duty.isDone })}
+              checked={duty.is_done}
+              onChange={() => onUpdate({ ...duty, is_done: !duty.is_done })}
             />
             {editingId === duty.id ? (
               <Input
@@ -52,7 +48,7 @@ const DutyList: React.FC<DutyListProps> = ({ duties, onUpdate, onDelete }) => {
                 onPressEnter={() => handleSave(duty)}
               />
             ) : (
-              <span style={{ textDecoration: duty.isDone ? 'line-through' : 'none' }}>
+              <span style={{ textDecoration: duty.is_done ? 'line-through' : 'none' }}>
                 {duty.name}
               </span>
             )}

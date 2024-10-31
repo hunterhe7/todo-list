@@ -1,7 +1,7 @@
 import axios from "axios";
 import { Duty } from "../types/Duty";
 
-const API_URL = "http://localhost:8000/duty";
+const API_URL = process.env.REACT_APP_API_URL || "";
 
 const dutyService = {
   getDuties: async (): Promise<Duty[]> => {

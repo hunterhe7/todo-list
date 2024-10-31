@@ -1,5 +1,5 @@
 export interface Duty {
   id: number;
   name: string;
-  isDone: boolean;
+  is_done: boolean;
 }
