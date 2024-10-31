@@ -5,30 +5,14 @@ const tableName = 'public.duty';
 export interface Duty {
   id: number;
   name: string;
-  isDone: boolean;
+  is_done: boolean;
 }
 
-export const createDuty = async (name: string) => {
+export const createDuty = async (name: string): Promise<Duty[]> => {
   try {
     const data = await db.create(tableName, {
       name,
-      isDone: false,
     });
-
-    return data;
-  } catch (error) {
-    console.log(error);
-  }
-};
-
-export const updateDuty = async (id: number, name: string, isDone: boolean) => {
-  try {
-    const data = await db.update(
-      tableName,
-      { name, isDone },
-      'id = $1',
-      [id]
-    );
 
     return data;
   } catch (error) {
@@ -37,21 +21,33 @@ export const updateDuty = async (id: number, name: string, isDone: boolean) => {
   }
 };
 
-export const listDuties = async () => {
+export const updateDuty = async (id: number, name: string, is_done: boolean): Promise<Duty[]> => {
+  try {
+    const data = await db.update(tableName, { name, is_done }, 'id = $1', [id]);
+
+    return data;
+  } catch (error) {
+    console.log(error);
+    throw error;
+  }
+};
+
+export const listDuties = async (): Promise<Duty[]> => {
   try {
     const data = await db.read(tableName, '', []); // Pass an empty string for no condition
     return data;
   } catch (error) {
     console.log(error);
-    throw error; // Optionally rethrow the error for handling further up the stack
+    throw error;
   }
 };
 
-export const deleteDuty = async (id: number) => {
+export const deleteDuty = async (id: number): Promise<Duty[]> => {
   try {
     const data = await db.delete(tableName, 'id = $1', [id]);
     return data;
   } catch (error) {
     console.log(error);
+    throw error;
   }
 };

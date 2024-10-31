@@ -1,12 +1,13 @@
-import { Pool } from 'pg';
+import { Pool, PoolClient } from 'pg';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
 class PostgreSQL {
   private pool: Pool;
+  private static instance: PostgreSQL;
 
-  constructor() {
+  private constructor() {
     this.pool = new Pool({
       host: process.env.DB_HOST,
       port: Number(process.env.DB_PORT),
@@ -15,43 +16,57 @@ class PostgreSQL {
       database: process.env.DB_DATABASE,
     });
 
-    this.initialize(); // TODO better use migration
+    this.initialize().catch(err => {
+      console.error('Failed to initialize database:', err);
+      process.exit(1);
+    });
+  }
+
+  public static getInstance(): PostgreSQL {
+    if (!PostgreSQL.instance) {
+      PostgreSQL.instance = new PostgreSQL();
+    }
+    return PostgreSQL.instance;
   }
 
   private async initialize() {
     try {
-      await this.createTable('public.duty');
+      await this.createTable(); // Better to use migration
       console.log('Table created or already exists');
     } catch (err) {
       console.error('Error creating table:', err);
+      throw err;
     }
   }
 
-  private async createTable(tableName: string): Promise<void> {
+  private async createTable(): Promise<void> {
     const query = `
-      CREATE TABLE IF NOT EXISTS ${tableName} (
+      CREATE TABLE IF NOT EXISTS public.duty (
         id SERIAL PRIMARY KEY,
         name VARCHAR(100) NOT NULL,
-        "isDone" BOOLEAN NOT NULL DEFAULT FALSE
+        is_done BOOLEAN NOT NULL DEFAULT FALSE,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       )
     `;
     await this.query(query);
   }
 
   async query(text: string, params?: any[]): Promise<any> {
-    const client = await this.pool.connect();
+    let client: PoolClient | null = null;
     try {
+      client = await this.pool.connect();
       const res = await client.query(text, params);
       return res.rows;
     } catch (err) {
       console.error('Database query error:', err);
       throw err;
     } finally {
-      client.release();
+      if (client) client.release();
     }
   }
 
-  async create(table: string, data: any): Promise<any> {
+  async create(table: string, data: Record<string, any>): Promise<any> {
     if (Object.keys(data).length === 0) {
       throw new Error('Data object cannot be empty');
     }
@@ -64,26 +79,17 @@ class PostgreSQL {
 
     const query = `INSERT INTO ${table} (${keys}) VALUES (${placeholders}) RETURNING *`;
 
-    console.log('Executing query:', query);
-
     return this.query(query, values);
   }
 
-  async read(
-    table: string,
-    conditions: string = '',
-    params: any[] = []
-  ): Promise<any> {
-    const query = `SELECT * FROM ${table} ${conditions}`;
-
-    console.log('read query', query);
-
+  async read(table: string, conditions: string = '', params: any[] = []): Promise<any> {
+    const query = `SELECT * FROM ${table} ${conditions ? 'WHERE ' + conditions : ''}`;
     return this.query(query, params);
   }
 
   async update(
     table: string,
-    data: any,
+    data: Record<string, any>,
     conditions: string,
     params: any[] = []
   ): Promise<any> {
@@ -91,26 +97,24 @@ class PostgreSQL {
       .map((key, i) => `"${key}" = $${i + 1}`)
       .join(', ');
     const values = [...Object.values(data)];
-    const query = `UPDATE ${table} SET ${updates} WHERE ${conditions} RETURNING *`;
 
-    // Adjust the parameter placeholders in the conditions
     const adjustedConditions = conditions.replace(
       /\$(\d+)/g,
       (_, num) => `$${parseInt(num) + Object.keys(data).length}`
     );
 
-    const adjustedQuery = `UPDATE ${table} SET ${updates} WHERE ${adjustedConditions} RETURNING *`;
+    const query = `
+      UPDATE ${table} 
+      SET ${updates}, updated_at = CURRENT_TIMESTAMP 
+      WHERE ${adjustedConditions} 
+      RETURNING *
+    `;
 
-    console.log('update query', adjustedQuery);
-
-    return this.query(adjustedQuery, [...values, ...params]);
+    return this.query(query, [...values, ...params]);
   }
 
   async delete(table: string, conditions: string, params: any[]): Promise<any> {
     const query = `DELETE FROM ${table} WHERE ${conditions} RETURNING *`;
-
-    console.log('delete query', query);
-
     return this.query(query, params);
   }
 
@@ -119,4 +123,4 @@ class PostgreSQL {
   }
 }
 
-export default new PostgreSQL();
+export default PostgreSQL.getInstance();

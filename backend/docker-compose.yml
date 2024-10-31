@@ -13,7 +13,9 @@ services:
       DB_DATABASE: nexplore
       PORT: 8000
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    restart: always
 
   db:
     image: postgres
@@ -21,10 +23,19 @@ services:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: admin
       POSTGRES_DB: nexplore
+      POSTGRES_HOST_AUTH_METHOD: trust
+      PGDATA: /var/lib/postgresql/data/pgdata
     ports:
       - '5432:5432'
-    # volumes:·
-      # - postgres_data:/var/lib/postgresql/data
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    command: postgres -c 'shared_buffers=128MB' -c 'max_connections=100' -c 'fsync=off' -c 'synchronous_commit=off' -c 'full_page_writes=off'
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d nexplore"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: always
 
   pgadmin:
     image: dpage/pgadmin4
@@ -35,6 +46,7 @@ services:
       PGADMIN_DEFAULT_PASSWORD: admin
     depends_on:
       - db
+    restart: always
 
 volumes:
   postgres_data:

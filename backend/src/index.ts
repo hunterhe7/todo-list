@@ -1,5 +1,6 @@
 import express, { Request, Response, NextFunction } from 'express';
 import dutyRoute from './controller/duty';
+import { HttpError } from './package/http_error';
 import cors from 'cors';
 
 const app = express();
@@ -15,7 +16,12 @@ app.get('/', (req: Request, res: Response) => {
 
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   console.error(err.stack);
-  res.status(500).json({ error: err.message });
+
+  if (err instanceof HttpError) {
+    return res.status(err.status).json({ error: err.message });
+  }
+
+  res.status(500).json({ error: 'Internal Server Error' });
 });
 
 app.listen(port, () => {
