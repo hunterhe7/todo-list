@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { AnyZodObject } from 'zod';
+import { AnyZodObject, ZodError } from 'zod';
 import { HttpError } from '../package/http_error';
 
 export const validateRequest =
@@ -12,6 +12,9 @@ export const validateRequest =
       });
       return next();
     } catch (error) {
-      throw new HttpError(400, 'Validation Error');
+      if (error instanceof ZodError) {
+        return next(new HttpError(400, `Validation Error: ${JSON.stringify(error.errors)}`));
+      }
+      next(new HttpError(400, 'Validation Error'));
     }
   };
