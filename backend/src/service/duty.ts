@@ -1,25 +1,76 @@
 import * as Duty from '../model/duty';
+import { HttpError } from '../package/http_error';
 
 export async function createDuty(name: string) {
-  const res = await Duty.createDuty(name);
+  try {
+    name = name.trim();
+    if (name.length === 0) {
+      throw new HttpError(400, 'Name cannot be empty');
+    }
+    if (name.length > 100) {
+      throw new HttpError(400, 'Name cannot exceed 100 characters');
+    }
 
-  return res;
+    const [duty] = await Duty.createDuty(name);
+    if (!duty) {
+      throw new HttpError(500, 'Failed to create duty');
+    }
+
+    return duty;
+  } catch (error) {
+    console.error('Create duty error:', error);
+    throw error;
+  }
 }
 
 export async function updateDuty(id: number, name: string, is_done: boolean) {
-  const res = await Duty.updateDuty(id, name, is_done);
+  try {
+    name = name.trim();
+    if (name.length === 0) {
+      throw new HttpError(400, 'Name cannot be empty');
+    }
+    if (name.length > 100) {
+      throw new HttpError(400, 'Name cannot exceed 100 characters');
+    }
 
-  return res;
+    const [duty] = await Duty.updateDuty(id, name, is_done);
+    if (!duty) {
+      throw new HttpError(500, 'Failed to update duty');
+    }
+
+    return duty;
+  } catch (error) {
+    console.error('Update duty error:', error);
+    throw error;
+  }
 }
 
 export async function deleteDuty(id: number) {
-  const res = await Duty.deleteDuty(id);
+  try {
+    const [duty] = await Duty.deleteDuty(id);
+    if (!duty) {
+      throw new HttpError(500, 'Failed to delete duty');
+    }
 
-  return res;
+    return duty;
+  } catch (error) {
+    console.error('Delete duty error:', error);
+    throw error;
+  }
 }
 
 export async function listDuties() {
-  const res = await Duty.listDuties();
+  try {
+    const duties = await Duty.listDuties();
 
-  return res;
+    return duties.sort((a, b) => {
+      if (a.is_done !== b.is_done) {
+        return a.is_done ? 1 : -1;
+      }
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
+  } catch (error) {
+    console.error('List duties error:', error);
+    throw error;
+  }
 }
